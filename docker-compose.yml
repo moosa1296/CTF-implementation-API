@@ -1,0 +1,23 @@
+version: '3'
+services:
+  # Crypto Challenge
+
+  # Pwn Challenges
+  chatuser:
+    build: ./chatuser/
+    ports:
+      - "14424:8080"
+    restart: unless-stopped
+
+  int_overflow_2_challenge:
+    build: ./int_overflow_2_challenge/
+    ports:
+      - "14425:8080"
+    restart: unless-stopped
+
+  calculator_challenge:
+    build: ./calculator_challenge/
+    ports:
+      - "14426:8080"
+    restart: unless-stopped
+

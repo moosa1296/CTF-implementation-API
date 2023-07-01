@@ -1,0 +1,28 @@
+[
+    {
+        "challenge_type": "pwn",
+        "vulns": [
+            {
+                "challenge_id": 1,
+                "port": 14424,
+                "vuln_code": "chatuser",
+                "custom_value": "chatuser",
+                "flag": "flag.txt"
+            },
+            {
+                "challenge_id": 2,
+                "port": 14425,
+                "vuln_code": "int_overflow_2_challenge",
+                "custom_value": "int_overflow_2_challenge",
+                "flag": "flag.txt"
+            },
+            {
+                "challenge_id": 3,
+                "port": 14426,
+                "vuln_code": "calculator_challenge",
+                "custom_value": "calculator_challenge",
+                "flag": "flag.txt"
+            }
+        ]
+    }
+]
