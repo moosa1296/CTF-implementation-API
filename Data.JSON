@@ -1,0 +1,31 @@
+[
+    {
+        "challenge_type": "pwn",
+        "vulns": [
+            {
+                "challenge_id": 1,
+                "port": 14424,
+                "vuln_code": "chatwithuser",
+                "custom_value": "chatuser",
+                "flag": "flag.txt",
+                "macros_value": "BUFFER_OVERFLOW",
+                "buffer_vuln": 1,
+                "subfolder_name": "macro_buffer",
+                "buffer_size": 16
+            },
+            {
+                "challenge_id": 2,
+                "port": 14425,
+                "vuln_code": "chatwithuser2",
+                "custom_value": "chatuser",
+                "flag": "flag.txt",
+                "macros_value": "INTEGER_OVERFLOW",
+                "buffer_vuln": 1,
+                "subfolder_name": "macro_int",
+                "buffer_size": 18
+            }
+           
+           
+        ]
+    }
+]
