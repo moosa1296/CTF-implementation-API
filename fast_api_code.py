@@ -1,42 +1,67 @@
+import logging
 import os
-import requests
+from fastapi import Request
 import shutil
 from fastapi import FastAPI
 from pydantic import BaseModel
 import json
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+origins = [
+    "http://localhost", "http://127.0.0.1:8000"
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 class Vuln(BaseModel):
     challenge_id: int
     port: int
-    vuln_code: str
-    custom_value: str
+    file_name: str
+    directory: str
     flag: str
-    macros_value: str
-    buffer_vuln: int
+    macros: str
+    macros_value: int
     subfolder_name: str
     buffer_size: int
+    function_name: str
+    # returnType: str
+    # parameters: str
+    cpp_code: str
 
 class Challenge(BaseModel):
     challenge_type: str
     vulns: List[Vuln]
 
-template = '''filename:
+template = '''fileName:
     build:
       context: ./path/
-      dockerfile: ./directory/Dockerfile
+      dockerfile: ./subfolder/Dockerfile
       args:
-        - macros_value=buffer_vuln
+        - macros=macros_value
         - BUFFER_SIZE=buffer_size  
     ports:
       - "port_number:8080"
     restart: unless-stopped'''
-@app.get("/rundocker")
-async def pwnapp():
-    with open("Data.JSON", "r") as file:
-        json_data = json.load(file)
+
+
+@app.post("/")
+async def main(request: Request):
+    data = await request.json()
+    print(data)
+    return {"message:" "Hello world"}
+@app.post("/rundocker")
+async def pwnapp(request: Request):
+    data = await request.json()
+    # with open("Data.JSON", "r") as file:
+    # print(data)
+    json_data = json.loads(data)
 
     docker_compose_content = '''version: '3'
 services:
@@ -60,47 +85,70 @@ EXPOSE 8080
 CMD socat TCP-LISTEN:8080,reuseaddr,fork EXEC:./general,pty,stderr,setsid,sigint,sane,raw,echo=0'''
 
     base_path = "chatuser"
-    
-    
-    #assigning values to variables from JSON file
-    json_list = list(json_data)
-    for data in json_list:
+    libraries_template = '''#include <iostream>
+#include <string>
+#include <ctime>
+#include <limits>
+#include <algorithm>
+'''
+
+    cpp_template = '''
+
+int main()
+{
+    functionName
+    return 0;
+}
+'''
+    cpp_function = ''
+    function_names = ''
+   
+    for data in json_data:
         challenge_type = data['challenge_type']
         if challenge_type == 'pwn':
             for vuln in data['vulns']:
                 challenge_id = vuln['challenge_id']
-                port = vuln['port']
-                vuln_code = vuln['vuln_code']
-                custom_value = vuln['custom_value']
-                flag = vuln['flag']
-                buffer_vuln = vuln['buffer_vuln']
+                macros = vuln['macros']
                 macros_value = vuln['macros_value']
+                port = vuln['port']
+                file_name = vuln['file_name']
+                directory = vuln['directory']
+                flag = vuln['flag']
                 subfolder_name = vuln['subfolder_name']
                 buffer_size = vuln['buffer_size']
-                print(macros_value)
+                function_name = vuln['function_name']
+                # returnType= vuln['returnType']
+                # parameters= vuln['parameters']
+                cpp_code= vuln['cpp_code']
+                print(macros)
 
 
                 #Replacing variables in docker-compose.yml file
                 temp_composer = template
-                temp_composer = temp_composer.replace("macros_value", macros_value)
-                temp_composer = temp_composer.replace("filename", vuln_code)
-                temp_composer = temp_composer.replace("buffer_vuln", str(buffer_vuln))
+                temp_composer = temp_composer.replace("macros", macros)
+                temp_composer = temp_composer.replace("fileName", file_name)
+                temp_composer = temp_composer.replace("macros_value", str(macros_value))
                 temp_composer = temp_composer.replace("port_number", str(port))
-                temp_composer = temp_composer.replace("path", custom_value)
+                temp_composer = temp_composer.replace("path", directory)
                 temp_composer = temp_composer.replace("buffer_size", str(buffer_size))
-                temp_composer = temp_composer.replace("directory", subfolder_name)
+                temp_composer = temp_composer.replace("subfolder", subfolder_name)
                 docker_compose_content += "  " + temp_composer + "\n\n"
                
                
                 #updating variables in Dockerfile
-                # temp = docker_content_in_template.replace("macros_value", macros_value)
-                temp = f'ARG {macros_value} \n'
+                # temp = docker_content_in_template.replace("macros", macros)
+                temp = f'ARG {macros} \n'
                 temp2 = f'ARG BUFFER_SIZE \n'
-                macro_define = f'-D"{macros_value}=${{{macros_value}}}" -D"BUFFER_SIZE=${{BUFFER_SIZE}}"'
+                macro_define = f'-D"{macros}=${{{macros}}}" -D"BUFFER_SIZE=${{BUFFER_SIZE}}"'
                 print(macro_define)
                 docker_content_up = docker_content_up.replace("directory", subfolder_name)
                 docker_content_in =  f'RUN g++ general.cpp -o general {macro_define}\n'
+                            # {returnType} {functionName}({parameters})
+                
 
+                cpp_function += cpp_code + '\n'
+                function_names += function_name + '();\n    '
+        
                
                 #creating subfloder and Dockerfile in it
                 subfolder_path = os.path.join(base_path, subfolder_name)
@@ -115,22 +163,28 @@ CMD socat TCP-LISTEN:8080,reuseaddr,fork EXEC:./general,pty,stderr,setsid,sigint
             
              
                 # deploying challenges on ctf-D through API
-    #             url = "http://10.212.172.184:8000/api/v1/challenges"
-    #             headers = {
-    #                 "Authorization": "Token aa39b3bad551c45215aa8640d701ce2e7f41508557289c06436f2ce52a15e998",
-    #                 "Content-Type": "application/json"
-    #             }
-    #             json_data = {
-    #                 "name": vuln_code,
-    #                 "category": "pwn",
-    #                 "description": "open powershell and put command http://127.0.0.1:8000 and run command nc localhost {}",
-    #                 "type": "standard",
-    #                 "value": 100,
-    #                 "max_attempts": 20
-    #                 }
-    #             response = requests.post(url, headers=headers, json= json_data)
+                # url = "http://10.212.172.184:8000/api/v1/challenges"
+                # headers = {
+                #     "Authorization": "Token aa39b3bad551c45215aa8640d701ce2e7f41508557289c06436f2ce52a15e998",
+                #     "Content-Type": "application/json"
+                # }
+                # json_data = {
+                #     "name": file_name,
+                #     "category": "pwn",
+                #     "description": "open powershell and put command http://127.0.0.1:8000 and run command nc localhost {port}",
+                #     "type": "standard",
+                #     "value": 100,
+                #     "max_attempts": 20
+                #     }
+                # response = requests.post(url, headers=headers, json= json_data)
+         # Remove the last occurrence of "functionName" in main()
+        # cpp_content = cpp_content.replace("functionName", "")
+        # cpp_content = libraries_template + overwrite + cpp_func_call
+        cpp_template = cpp_template.replace("functionName", function_names)
+        cpp_content = libraries_template + cpp_function + cpp_template
+        with open('./chatuser/chatwithuser.cpp', 'w') as file:
+            file.write(cpp_content)
 
-        
         #writing docker-compose.yml file
         with open("docker-compose.yml", "w") as f:
             f.write(docker_compose_content)
